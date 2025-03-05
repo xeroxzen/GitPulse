@@ -13,6 +13,11 @@ class GitHubContributor:
     lines_deleted: int
     files_changed: int
     languages: Dict[str, int]
+    issues: int = 0
+    pull_requests: int = 0
+    stars: int = 0
+    forks: int = 0
+    watchers: int = 0
 
 class GitHubClient:
     def __init__(self, token: Optional[str] = None):
@@ -38,6 +43,9 @@ class GitHubClient:
     
     def get_contributor_stats(self, owner: str, repo: str) -> List[GitHubContributor]:
         """Get contributor statistics for a repository."""
+        # Get repository info for stars, forks, watchers
+        repo_info = self._make_request(f'/repos/{owner}/{repo}')
+        
         # Get contributors list
         contributors = self._make_request(f'/repos/{owner}/{repo}/contributors')
         
@@ -63,14 +71,32 @@ class GitHubClient:
                 # Get language stats
                 languages = self._get_contributor_languages(owner, repo, contributor['login'])
                 
+                # Get issues and PRs created by the contributor
+                issues = self._make_request(
+                    f'/repos/{owner}/{repo}/issues',
+                    params={'creator': contributor['login'], 'state': 'all'}
+                )
+                pull_requests = self._make_request(
+                    f'/repos/{owner}/{repo}/pulls',
+                    params={'creator': contributor['login'], 'state': 'all'}
+                )
+                
+                # Generate a default email if not available
+                email = f"{contributor['login']}@users.noreply.github.com"
+                
                 stats.append(GitHubContributor(
                     name=contributor['login'],
-                    email=contributor['email'] or f"{contributor['login']}@users.noreply.github.com",
+                    email=email,
                     commit_count=total_commits,
                     lines_added=total_additions,
                     lines_deleted=total_deletions,
                     files_changed=0,  # GitHub API doesn't provide this directly
-                    languages=languages
+                    languages=languages,
+                    issues=len(issues),
+                    pull_requests=len(pull_requests),
+                    stars=repo_info['stargazers_count'],
+                    forks=repo_info['forks_count'],
+                    watchers=repo_info['watchers_count']
                 ))
         
         return stats
