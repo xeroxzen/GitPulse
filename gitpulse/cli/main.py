@@ -14,7 +14,7 @@ def cli():
     pass
 
 @cli.command()
-@click.argument('path', type=click.Path(exists=True))
+@click.argument('path')
 @click.option('--remote', is_flag=True, help='Analyze a remote GitHub repository')
 @click.option('--token', envvar='GITHUB_TOKEN', help='GitHub personal access token')
 def analyze(path: str, remote: bool, token: str):
@@ -27,18 +27,28 @@ def analyze(path: str, remote: bool, token: str):
             if token:
                 os.environ['GITHUB_TOKEN'] = token
             
+            # For remote repositories, we don't need to check if path exists
+            if not remote:
+                if not os.path.exists(path):
+                    raise click.BadParameter(f"Path '{path}' does not exist")
+            
             repo = Repository(path, is_remote=remote)
             
             # Get contributor statistics
             stats = repo.get_contributor_stats()
             
             # Create and display contributor table
-            table = Table(title="Contributor Statistics")
+            table = Table(title="\nContributor Statistics")
             table.add_column("Name", style="cyan")
             table.add_column("Commits", justify="right")
             table.add_column("Files Changed", justify="right")
             table.add_column("Lines Added", justify="right")
             table.add_column("Lines Deleted", justify="right")
+            table.add_column("Issues", justify="right")
+            table.add_column("Pull Requests", justify="right")
+            table.add_column("Stars", justify="right")
+            table.add_column("Forks", justify="right")
+            table.add_column("Watchers", justify="right")
             
             for stat in stats:
                 table.add_row(
@@ -46,7 +56,12 @@ def analyze(path: str, remote: bool, token: str):
                     str(stat.commit_count),
                     str(stat.files_changed),
                     str(stat.lines_added),
-                    str(stat.lines_deleted)
+                    str(stat.lines_deleted),
+                    str(stat.issues),
+                    str(stat.pull_requests),
+                    str(stat.stars),
+                    str(stat.forks),
+                    str(stat.watchers)
                 )
             
             console.print(table)
