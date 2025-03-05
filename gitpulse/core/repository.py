@@ -79,16 +79,29 @@ class Repository:
             
             # Get diff stats
             if commit.parents:
-                diff = commit.parents[0].diff(commit, create_patch=True)
-                for d in diff:
-                    contributor.lines_added += d.additions
-                    contributor.lines_deleted += d.deletions
-                    contributor.files_changed += 1
-                    
-                    # Track language contributions
-                    if d.a_path:
-                        lang = self.language_detector.detect_language(d.a_path)
-                        contributor.languages[lang] = contributor.languages.get(lang, 0) + 1
+                # Get the diff between this commit and its parent
+                diff = self.repo.git.diff(
+                    commit.parents[0].hexsha,
+                    commit.hexsha,
+                    '--numstat'
+                ).split('\n')
+                
+                for line in diff:
+                    if line.strip():
+                        try:
+                            # Parse numstat output: additions deletions filename
+                            additions, deletions, filename = line.split('\t')
+                            contributor.lines_added += int(additions)
+                            contributor.lines_deleted += int(deletions)
+                            contributor.files_changed += 1
+                            
+                            # Track language contributions
+                            if filename:
+                                lang = self.language_detector.detect_language(filename)
+                                contributor.languages[lang] = contributor.languages.get(lang, 0) + 1
+                        except (ValueError, IndexError):
+                            # Skip malformed lines
+                            continue
         
         return list(stats.values())
     
