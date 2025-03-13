@@ -1,5 +1,6 @@
 import os
 import requests
+import time
 from typing import Dict, List, Optional
 from dataclasses import dataclass
 from datetime import datetime
@@ -41,6 +42,29 @@ class GitHubClient:
         response.raise_for_status()
         return response.json()
     
+    def _make_request_with_retry(self, endpoint: str, params: Optional[Dict] = None, max_retries: int = 3, retry_delay: int = 2) -> Dict:
+        """Make a request to the GitHub API with retry for 202 responses.
+        
+        Some GitHub API endpoints (like stats) may return 202 if the data is being computed.
+        In this case, we need to retry the request after a short delay.
+        """
+        url = f'https://api.github.com{endpoint}'
+        
+        for attempt in range(max_retries):
+            response = requests.get(url, headers=self.headers, params=params)
+            response.raise_for_status()
+            
+            # If we get a 202, the data is being computed, so we need to retry
+            if response.status_code == 202:
+                if attempt < max_retries - 1:
+                    time.sleep(retry_delay)
+                    continue
+            
+            return response.json()
+        
+        # If we've exhausted all retries and still get 202, return an empty result
+        return {}
+    
     def get_contributor_stats(self, owner: str, repo: str) -> List[GitHubContributor]:
         """Get contributor statistics for a repository."""
         # Get repository info for stars, forks, watchers
@@ -49,24 +73,42 @@ class GitHubClient:
         # Get contributors list
         contributors = self._make_request(f'/repos/{owner}/{repo}/contributors')
         
+        # Get contributor stats with retry for 202 responses
+        contributor_stats = self._make_request_with_retry(f'/repos/{owner}/{repo}/stats/contributors')
+        
+        if not contributor_stats:
+            # If we still couldn't get stats, return basic contributor info
+            return [
+                GitHubContributor(
+                    name=contributor['login'],
+                    email=f"{contributor['login']}@users.noreply.github.com",
+                    commit_count=contributor.get('contributions', 0),
+                    lines_added=0,
+                    lines_deleted=0,
+                    files_changed=0,
+                    languages={},
+                    issues=0,
+                    pull_requests=0,
+                    stars=repo_info['stargazers_count'],
+                    forks=repo_info['forks_count'],
+                    watchers=repo_info['watchers_count']
+                )
+                for contributor in contributors
+            ]
+        
         stats = []
         for contributor in contributors:
-            # Get detailed contributor stats
-            contributor_stats = self._make_request(
-                f'/repos/{owner}/{repo}/stats/contributors'
-            )
-            
             # Find the contributor's stats
             user_stats = next(
-                (stat for stat in contributor_stats if stat['author']['id'] == contributor['id']),
+                (stat for stat in contributor_stats if stat.get('author', {}).get('id') == contributor['id']),
                 None
             )
             
             if user_stats:
                 # Calculate total changes
-                total_additions = sum(week['a'] for week in user_stats['weeks'])
-                total_deletions = sum(week['d'] for week in user_stats['weeks'])
-                total_commits = sum(week['c'] for week in user_stats['weeks'])
+                total_additions = sum(week.get('a', 0) for week in user_stats.get('weeks', []))
+                total_deletions = sum(week.get('d', 0) for week in user_stats.get('weeks', []))
+                total_commits = sum(week.get('c', 0) for week in user_stats.get('weeks', []))
                 
                 # Get language stats
                 languages = self._get_contributor_languages(owner, repo, contributor['login'])
@@ -94,6 +136,22 @@ class GitHubClient:
                     languages=languages,
                     issues=len(issues),
                     pull_requests=len(pull_requests),
+                    stars=repo_info['stargazers_count'],
+                    forks=repo_info['forks_count'],
+                    watchers=repo_info['watchers_count']
+                ))
+            else:
+                # If we couldn't find stats for this contributor, use basic info
+                stats.append(GitHubContributor(
+                    name=contributor['login'],
+                    email=f"{contributor['login']}@users.noreply.github.com",
+                    commit_count=contributor.get('contributions', 0),
+                    lines_added=0,
+                    lines_deleted=0,
+                    files_changed=0,
+                    languages={},
+                    issues=0,
+                    pull_requests=0,
                     stars=repo_info['stargazers_count'],
                     forks=repo_info['forks_count'],
                     watchers=repo_info['watchers_count']
