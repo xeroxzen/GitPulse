@@ -7,11 +7,11 @@ setup(
     name="gitpulse",
     version="0.1.0",
     author="Andile Jaden Mbele",
-    author_email="andilejaden@gmail.com",
+    author_email="andilembele020@gmail.com",
     description="A tool for analyzing Git repositories and measuring contributions",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/xeroxzen/gitpulse",
+    url="https://github.com/xeroxzen/GitPulse",
     packages=find_packages(),
     classifiers=[
         "Development Status :: 3 - Alpha",
@@ -23,6 +23,7 @@ setup(
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
     ],
     python_requires=">=3.8",
     install_requires=[
