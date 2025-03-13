@@ -20,63 +20,70 @@ def cli():
 def analyze(path: str, remote: bool, token: str):
     """Analyze a Git repository and display contribution statistics."""
     try:
-        with Progress() as progress:
-            task = progress.add_task("[cyan]Analyzing repository...", total=None)
+        # Set GitHub token if provided
+        if token:
+            os.environ['GITHUB_TOKEN'] = token
+        
+        # For remote repositories, we don't need to check if path exists
+        if not remote:
+            if not os.path.exists(path):
+                raise click.BadParameter(f"Path '{path}' does not exist")
+        
+        repo = Repository(path, is_remote=remote)
+        
+        # Perform complete analysis
+        repo.analyze()
+        
+    except Exception as e:
+        console.print(f"[red]Error: {str(e)}")
+        raise click.Abort()
+
+@cli.command()
+@click.argument('path')
+@click.option('--remote', is_flag=True, help='Analyze a remote GitHub repository')
+@click.option('--token', envvar='GITHUB_TOKEN', help='GitHub personal access token')
+def codebase(path: str, remote: bool, token: str):
+    """Analyze the codebase/repository structure."""
+    try:
+        # Set GitHub token if provided
+        if token:
+            os.environ['GITHUB_TOKEN'] = token
             
-            # Set GitHub token if provided
-            if token:
-                os.environ['GITHUB_TOKEN'] = token
+        # For remote repositories, we don't need to check if path exists
+        if not remote:
+            if not os.path.exists(path):
+                raise click.BadParameter(f"Path '{path}' does not exist")
+        
+        repo = Repository(path, is_remote=remote)
+        
+        # Analyze only the codebase
+        repo.analyze_codebase()
+        
+    except Exception as e:
+        console.print(f"[red]Error: {str(e)}")
+        raise click.Abort()
+
+@cli.command()
+@click.argument('path')
+@click.option('--remote', is_flag=True, help='Analyze a remote GitHub repository')
+@click.option('--token', envvar='GITHUB_TOKEN', help='GitHub personal access token')
+def contributors(path: str, remote: bool, token: str):
+    """Analyze contributors to the repository."""
+    try:
+        # Set GitHub token if provided
+        if token:
+            os.environ['GITHUB_TOKEN'] = token
             
-            # For remote repositories, we don't need to check if path exists
-            if not remote:
-                if not os.path.exists(path):
-                    raise click.BadParameter(f"Path '{path}' does not exist")
-            
-            repo = Repository(path, is_remote=remote)
-            
-            # Get contributor statistics
-            stats = repo.get_contributor_stats()
-            
-            # Create and display contributor table
-            table = Table(title="\nContributor Statistics")
-            table.add_column("Name", style="cyan")
-            table.add_column("Commits", justify="right")
-            table.add_column("Files Changed", justify="right")
-            table.add_column("Lines Added", justify="right")
-            table.add_column("Lines Deleted", justify="right")
-            table.add_column("Issues", justify="right")
-            table.add_column("Pull Requests", justify="right")
-            table.add_column("Stars", justify="right")
-            table.add_column("Forks", justify="right")
-            table.add_column("Watchers", justify="right")
-            
-            for stat in stats:
-                table.add_row(
-                    stat.name,
-                    str(stat.commit_count),
-                    str(stat.files_changed),
-                    str(stat.lines_added),
-                    str(stat.lines_deleted),
-                    str(stat.issues),
-                    str(stat.pull_requests),
-                    str(stat.stars),
-                    str(stat.forks),
-                    str(stat.watchers)
-                )
-            
-            console.print(table)
-            
-            # Display top languages
-            languages = repo.get_top_languages()
-            lang_table = Table(title="Top Languages")
-            lang_table.add_column("Language", style="green")
-            lang_table.add_column("Files", justify="right")
-            
-            for lang, count in languages.items():
-                lang_table.add_row(lang, str(count))
-            
-            console.print(lang_table)
-            
+        # For remote repositories, we don't need to check if path exists
+        if not remote:
+            if not os.path.exists(path):
+                raise click.BadParameter(f"Path '{path}' does not exist")
+        
+        repo = Repository(path, is_remote=remote)
+        
+        # Analyze only the contributors
+        repo.analyze_contributors()
+        
     except Exception as e:
         console.print(f"[red]Error: {str(e)}")
         raise click.Abort()
@@ -93,14 +100,33 @@ def languages(path: str, remote: bool, token: str):
             os.environ['GITHUB_TOKEN'] = token
             
         repo = Repository(path, is_remote=remote)
-        languages = repo.get_top_languages()
         
-        table = Table(title="Language Distribution")
-        table.add_column("Language", style="green")
-        table.add_column("Files", justify="right")
-        
-        for lang, count in languages.items():
-            table.add_row(lang, str(count))
+        if remote:
+            # For remote repos, use GitHub API
+            languages = repo.github_client._make_request(f'/repos/{repo.owner}/{repo.repo_name}/languages')
+            
+            table = Table(title="Language Distribution")
+            table.add_column("Language", style="green")
+            table.add_column("Bytes", justify="right")
+            table.add_column("Percentage", justify="right")
+            
+            total_bytes = sum(languages.values())
+            for lang, bytes_count in languages.items():
+                percentage = (bytes_count / total_bytes) * 100 if total_bytes > 0 else 0
+                table.add_row(lang, str(bytes_count), f"{percentage:.1f}%")
+        else:
+            # For local repos, use Codebase class
+            languages = repo.codebase.get_language_stats()
+            
+            table = Table(title="Language Distribution")
+            table.add_column("Language", style="green")
+            table.add_column("Files", justify="right")
+            table.add_column("Percentage", justify="right")
+            
+            total_files = sum(languages.values())
+            for lang, count in languages.items():
+                percentage = (count / total_files) * 100 if total_files > 0 else 0
+                table.add_row(lang, str(count), f"{percentage:.1f}%")
         
         console.print(table)
         
