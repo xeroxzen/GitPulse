@@ -31,6 +31,13 @@ class ContributorResponse(BaseModel):
     lines_deleted: int
     files_changed: int
     languages: Dict[str, int]
+    total_changes: int
+    percentage: float
+    total_lines: int
+    percentage_lines: float
+    total_files: int
+    percentage_files: float
+    
 
 @app.post("/analyze", response_model=List[ContributorResponse])
 async def analyze_repository(request: RepositoryRequest):
