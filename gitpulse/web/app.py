@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Dict, List, Optional
 from ..core.repository import Repository, ContributorStats
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 
 app = FastAPI(
     title="GitPulse API",
@@ -18,6 +20,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Mount static files
+static_path = Path(__file__).parent / "static"
+app.mount("/static", StaticFiles(directory=str(static_path)), name="static")
 
 class RepositoryRequest(BaseModel):
     path: str
@@ -62,4 +68,10 @@ async def get_languages(request: RepositoryRequest):
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
-    return {"status": "healthy"} 
+    return {"status": "healthy"}
+
+@app.get("/")
+async def root():
+    """Redirect to the static index.html file."""
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/static/index.html") 
