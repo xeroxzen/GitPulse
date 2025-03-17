@@ -8,7 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const totalLanguagesElement = document.getElementById("totalLanguages");
   const totalContributorsElement = document.getElementById("totalContributors");
   const totalCommitsElement = document.getElementById("totalCommits");
-  
+
   let languageChart = null;
   let contributionChart = null;
   let contributorsData = [];
@@ -29,7 +29,7 @@ document.addEventListener("DOMContentLoaded", () => {
     "#24292e", // GitHub dark gray
   ];
 
-  form.addEventListener("submit", async (e) => {
+  form.addEventListener("submit", (e) => {
     e.preventDefault();
 
     const formData = new FormData(form);
@@ -41,7 +41,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Extract repo name from URL for display
     const repoUrl = data.path;
     const repoNameMatch = repoUrl.match(/github\.com\/([^\/]+)\/([^\/]+)/);
-    
+
     if (repoNameMatch && repoNameMatch.length >= 3) {
       const owner = repoNameMatch[1];
       const repo = repoNameMatch[2];
@@ -54,69 +54,76 @@ document.addEventListener("DOMContentLoaded", () => {
     loading.classList.remove("hidden");
     results.classList.add("hidden");
 
-    try {
-      // Analyze repository
-      const response = await fetch("/analyze", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
+    // Analyze repository
+    fetch("/analyze", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          return response.json().then((errorData) => {
+            throw new Error(errorData.detail || "Failed to analyze repository");
+          });
+        }
+        return response.json();
+      })
+      .then((stats) => {
+        contributorsData = stats; // Store for filtering
+
+        // Get language distribution
+        return fetch("/languages", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(data),
+        });
+      })
+      .then((langResponse) => {
+        if (!langResponse.ok) {
+          throw new Error("Failed to get language distribution");
+        }
+        return langResponse.json();
+      })
+      .then(({ languages }) => {
+        // Update summary stats
+        updateSummaryStats(contributorsData, languages);
+
+        // Update contributor table
+        updateContributorTable(contributorsData);
+
+        // Update language chart
+        updateLanguageChart(languages);
+
+        // Update contribution impact chart
+        updateContributionChart(contributorsData);
+
+        // Show results
+        results.classList.remove("hidden");
+      })
+      .catch((error) => {
+        showError(error.message);
+      })
+      .finally(() => {
+        loading.classList.add("hidden");
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || "Failed to analyze repository");
-      }
-
-      const stats = await response.json();
-      contributorsData = stats; // Store for filtering
-
-      // Get language distribution
-      const langResponse = await fetch("/languages", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (!langResponse.ok) {
-        throw new Error("Failed to get language distribution");
-      }
-
-      const { languages } = await langResponse.json();
-
-      // Update summary stats
-      updateSummaryStats(stats, languages);
-
-      // Update contributor table
-      updateContributorTable(stats);
-
-      // Update language chart
-      updateLanguageChart(languages);
-
-      // Update contribution impact chart
-      updateContributionChart(stats);
-
-      // Show results
-      results.classList.remove("hidden");
-    } catch (error) {
-      showError(error.message);
-    } finally {
-      loading.classList.add("hidden");
-    }
   });
 
   function updateSummaryStats(stats, languages) {
     // Update total languages
     totalLanguagesElement.textContent = Object.keys(languages).length;
-    
+
     // Update total contributors
     totalContributorsElement.textContent = stats.length;
-    
+
     // Calculate total commits
-    const totalCommits = stats.reduce((sum, contributor) => sum + contributor.commit_count, 0);
+    const totalCommits = stats.reduce(
+      (sum, contributor) => sum + contributor.commit_count,
+      0
+    );
     totalCommitsElement.textContent = totalCommits.toLocaleString();
   }
 
@@ -126,10 +133,10 @@ document.addEventListener("DOMContentLoaded", () => {
     stats.forEach((stat) => {
       const row = document.createElement("tr");
       row.className = "contributor-row hover:bg-gray-50";
-      
+
       // Calculate percentage for progress bar
       const percentage = stat.percentage.toFixed(1);
-      
+
       row.innerHTML = `
         <td class="px-6 py-4 whitespace-nowrap">
           <div class="flex items-center">
@@ -163,7 +170,7 @@ document.addEventListener("DOMContentLoaded", () => {
           </div>
         </td>
       `;
-      
+
       contributorTable.appendChild(row);
     });
   }
@@ -204,27 +211,27 @@ document.addEventListener("DOMContentLoaded", () => {
               boxWidth: 12,
               padding: 15,
               font: {
-                size: 11
-              }
-            }
+                size: 11,
+              },
+            },
           },
           tooltip: {
             callbacks: {
-              label: function(context) {
-                const label = context.label || '';
+              label: function (context) {
+                const label = context.label || "";
                 const value = context.raw;
                 const total = context.dataset.data.reduce((a, b) => a + b, 0);
                 const percentage = Math.round((value / total) * 100);
                 return `${label}: ${percentage}% (${value} bytes)`;
-              }
-            }
-          }
+              },
+            },
+          },
         },
-        cutout: '70%',
+        cutout: "70%",
         animation: {
           animateScale: true,
-          animateRotate: true
-        }
+          animateRotate: true,
+        },
       },
     });
   }
@@ -238,26 +245,29 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Sort contributors by total changes (descending)
-    const sortedContributors = [...stats].sort((a, b) => 
-      (b.lines_added + b.lines_deleted) - (a.lines_added + a.lines_deleted)
-    ).slice(0, 5); // Only show top 5 contributors
+    const sortedContributors = [...stats]
+      .sort(
+        (a, b) =>
+          b.lines_added + b.lines_deleted - (a.lines_added + a.lines_deleted)
+      )
+      .slice(0, 5); // Only show top 5 contributors
 
     // Create new chart
     contributionChart = new Chart(ctx, {
       type: "bar",
       data: {
-        labels: sortedContributors.map(c => c.name),
+        labels: sortedContributors.map((c) => c.name),
         datasets: [
           {
             label: "Lines Added",
-            data: sortedContributors.map(c => c.lines_added),
+            data: sortedContributors.map((c) => c.lines_added),
             backgroundColor: "rgba(40, 167, 69, 0.7)",
             borderColor: "rgba(40, 167, 69, 1)",
             borderWidth: 1,
           },
           {
             label: "Lines Deleted",
-            data: sortedContributors.map(c => c.lines_deleted),
+            data: sortedContributors.map((c) => c.lines_deleted),
             backgroundColor: "rgba(215, 58, 73, 0.7)",
             borderColor: "rgba(215, 58, 73, 1)",
             borderWidth: 1,
@@ -271,15 +281,15 @@ document.addEventListener("DOMContentLoaded", () => {
           x: {
             stacked: false,
             grid: {
-              display: false
-            }
+              display: false,
+            },
           },
           y: {
             stacked: false,
             beginAtZero: true,
             grid: {
-              color: "rgba(0, 0, 0, 0.05)"
-            }
+              color: "rgba(0, 0, 0, 0.05)",
+            },
           },
         },
         plugins: {
@@ -299,23 +309,25 @@ document.addEventListener("DOMContentLoaded", () => {
   if (contributorSearch) {
     contributorSearch.addEventListener("input", (e) => {
       const searchTerm = e.target.value.toLowerCase();
-      
+
       if (!contributorsData.length) return;
-      
-      const filteredContributors = searchTerm 
-        ? contributorsData.filter(c => 
-            c.name.toLowerCase().includes(searchTerm) || 
-            c.email.toLowerCase().includes(searchTerm)
+
+      const filteredContributors = searchTerm
+        ? contributorsData.filter(
+            (c) =>
+              c.name.toLowerCase().includes(searchTerm) ||
+              c.email.toLowerCase().includes(searchTerm)
           )
         : contributorsData;
-        
+
       updateContributorTable(filteredContributors);
     });
   }
 
   function showError(message) {
     const errorDiv = document.createElement("div");
-    errorDiv.className = "bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-8";
+    errorDiv.className =
+      "bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-8";
     errorDiv.innerHTML = `
       <div class="flex">
         <div class="flex-shrink-0">
@@ -328,11 +340,11 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
       </div>
     `;
-    
+
     // Insert error before results
     const container = document.querySelector(".container");
     container.insertBefore(errorDiv, results);
-    
+
     // Auto-remove after 5 seconds
     setTimeout(() => {
       errorDiv.remove();
