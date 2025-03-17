@@ -4,20 +4,32 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GitPulse - Git Repository Analytics</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="static/css/style.css" />
   </head>
   <body class="bg-gray-50 text-gray-900">
     <nav class="bg-gray-900 text-white shadow-md">
-      <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+      <div
+        class="container mx-auto px-4 py-3 flex items-center justify-between"
+      >
         <div class="flex items-center space-x-2">
           <i class="fas fa-code-branch text-green-400 text-2xl"></i>
           <span class="text-xl font-bold">GitPulse</span>
         </div>
         <div>
-          <a href="https://github.com/yourusername/gitpulse" target="_blank" class="text-gray-300 hover:text-white">
+          <a
+            href="https://github.com/yourusername/gitpulse"
+            target="_blank"
+            class="text-gray-300 hover:text-white"
+          >
             <i class="fab fa-github text-xl"></i>
           </a>
         </div>
@@ -26,20 +38,29 @@
 
     <div class="container mx-auto px-4 py-8">
       <header class="text-center mb-8">
-        <h1 class="text-4xl font-bold text-gray-800 mb-2">Repository Analytics</h1>
+        <h1 class="text-4xl font-bold text-gray-800 mb-2">
+          Repository Analytics
+        </h1>
         <p class="text-gray-600">
           Analyze GitHub repositories to understand contributions and impact
         </p>
       </header>
 
-      <div class="bg-white rounded-lg shadow-md p-6 mb-8 border border-gray-200">
+      <div
+        class="bg-white rounded-lg shadow-md p-6 mb-8 border border-gray-200"
+      >
         <form id="analyzeForm" class="space-y-4">
           <div>
-            <label for="repoPath" class="block text-sm font-medium text-gray-700">
+            <label
+              for="repoPath"
+              class="block text-sm font-medium text-gray-700"
+            >
               GitHub Repository URL
             </label>
             <div class="mt-1 flex rounded-md shadow-sm">
-              <span class="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500">
+              <span
+                class="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500"
+              >
                 <i class="fab fa-github"></i>
               </span>
               <input
@@ -68,17 +89,26 @@
 
       <div id="loading" class="hidden">
         <div class="flex flex-col items-center justify-center py-12">
-          <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-green-600"></div>
+          <div
+            class="animate-spin rounded-full h-16 w-16 border-b-2 border-green-600"
+          ></div>
           <p class="mt-4 text-gray-600 text-lg">Analyzing repository...</p>
-          <p class="text-gray-500 text-sm mt-2">This may take a moment for large repositories</p>
+          <p class="text-gray-500 text-sm mt-2">
+            This may take a moment for large repositories
+          </p>
         </div>
       </div>
 
       <div id="results" class="hidden space-y-8">
         <div class="bg-white rounded-lg shadow-md p-6 border border-gray-200">
           <div class="flex items-center justify-between mb-4">
-            <h2 class="text-2xl font-semibold text-gray-800">Repository Overview</h2>
-            <span id="repoName" class="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm"></span>
+            <h2 class="text-2xl font-semibold text-gray-800">
+              Repository Overview
+            </h2>
+            <span
+              id="repoName"
+              class="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm"
+            ></span>
           </div>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
@@ -119,50 +149,80 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div class="bg-white rounded-lg shadow-md p-6 border border-gray-200">
-            <h2 class="text-2xl font-semibold mb-4 text-gray-800">Language Distribution</h2>
+            <h2 class="text-2xl font-semibold mb-4 text-gray-800">
+              Language Distribution
+            </h2>
             <canvas id="languageChart" height="250"></canvas>
           </div>
 
           <div class="bg-white rounded-lg shadow-md p-6 border border-gray-200">
-            <h2 class="text-2xl font-semibold mb-4 text-gray-800">Contribution Impact</h2>
+            <h2 class="text-2xl font-semibold mb-4 text-gray-800">
+              Contribution Impact
+            </h2>
             <canvas id="contributionChart" height="250"></canvas>
           </div>
         </div>
 
         <div class="bg-white rounded-lg shadow-md p-6 border border-gray-200">
           <div class="flex items-center justify-between mb-4">
-            <h2 class="text-2xl font-semibold text-gray-800">Contributor Statistics</h2>
+            <h2 class="text-2xl font-semibold text-gray-800">
+              Contributor Statistics
+            </h2>
             <div class="relative">
-              <input 
-                type="text" 
-                id="contributorSearch" 
-                placeholder="Search contributors..." 
+              <input
+                type="text"
+                id="contributorSearch"
+                placeholder="Search contributors..."
                 class="px-3 py-1 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
-              >
+              />
             </div>
           </div>
+          <p class="text-gray-600 mb-4">
+            This table shows detailed statistics for each contributor, including
+            their commit count, lines of code changed, files modified, and
+            overall impact percentage on the repository. Use the search box to
+            filter contributors by name.
+          </p>
           <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
               <thead class="bg-gray-50">
                 <tr>
-                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th
+                    scope="col"
+                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
                     Contributor
                   </th>
-                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th
+                    scope="col"
+                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
                     Commits
                   </th>
-                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th
+                    scope="col"
+                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
                     Lines Added/Deleted
                   </th>
-                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th
+                    scope="col"
+                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
                     Files Changed
                   </th>
-                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th
+                    scope="col"
+                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
                     Impact %
                   </th>
                 </tr>
               </thead>
-              <tbody id="contributorTable" class="bg-white divide-y divide-gray-200"></tbody>
+              <tbody
+                id="contributorTable"
+                class="bg-white divide-y divide-gray-200"
+              ></tbody>
             </table>
           </div>
         </div>
@@ -177,7 +237,9 @@
               <i class="fas fa-code-branch text-green-400 mr-2"></i>
               <span class="font-bold">GitPulse</span>
             </div>
-            <p class="text-gray-400 text-sm mt-1">Know Your Contributions. Measure Your Impact.</p>
+            <p class="text-gray-400 text-sm mt-1">
+              Know Your Contributions. Measure Your Impact.
+            </p>
           </div>
           <div class="flex space-x-4">
             <a href="#" class="text-gray-400 hover:text-white">
