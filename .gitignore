@@ -200,3 +200,8 @@ wheels/
 venv/
 ENV/
 env/
+
+# Reports
+git_commits.json
+gitpulse_report.html
+report.html
