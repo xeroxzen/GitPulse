@@ -164,7 +164,9 @@ class ContributorAnalyzer:
         extension_map = {
             '.py': 'Python',
             '.js': 'JavaScript',
+            '.jsx': 'JavaScript',
             '.ts': 'TypeScript',
+            '.tsx':'TypeScript',
             '.java': 'Java',
             '.cpp': 'C++',
             '.c': 'C',
