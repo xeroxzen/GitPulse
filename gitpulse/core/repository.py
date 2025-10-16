@@ -444,6 +444,20 @@ class Repository:
             for lang, count in languages.items()
         }
     
+    def get_lines_of_code_stats(self) -> Dict:
+        """Get comprehensive lines of code statistics for the repository."""
+        if self.is_remote:
+            # For remote repos, we can't get detailed LOC stats from GitHub API
+            # GitHub only provides language statistics in bytes
+            return {
+                "total_lines": "N/A (remote repository)",
+                "by_language": {},
+                "note": "Detailed LOC statistics not available for remote repositories via GitHub API"
+            }
+        else:
+            # For local repos, use the Codebase class
+            return self.codebase.get_lines_of_code_stats()
+    
     def display_language_stats(self):
         """Display language statistics in a formatted table."""
         languages = self.get_top_languages()
