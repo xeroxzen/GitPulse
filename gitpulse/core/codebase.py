@@ -107,6 +107,74 @@ class Codebase:
 
         return dict(sorted(languages.items(), key=lambda x: x[1], reverse=True))
 
+    def get_lines_of_code_stats(self) -> Dict:
+        """Get comprehensive lines of code statistics for the repository."""
+        loc_stats = {
+            "total_lines": 0,
+            "by_language": {},
+            "by_file_type": {},
+            "code_files": 0,
+            "non_code_files": 0,
+        }
+        
+        # Define file types that are typically considered "code"
+        code_extensions = {
+            ".py", ".js", ".jsx", ".ts", ".tsx", ".java", ".cpp", ".c", ".h", 
+            ".cs", ".rb", ".php", ".go", ".rs", ".swift", ".kt", ".scala", 
+            ".r", ".m", ".sh", ".bash", ".sql", ".html", ".css", ".scss", 
+            ".sass", ".less", ".xml", ".yaml", ".yml", ".json", ".toml"
+        }
+        
+        try:
+            # Get all files in the repository
+            files = self.repo.git.ls_files().split("\n")
+            filtered_files = [f for f in files if f and not self._should_exclude_file(f)]
+            
+            for file_path in filtered_files:
+                if not file_path:
+                    continue
+                    
+                try:
+                    file_full_path = Path(self.path, file_path)
+                    if not file_full_path.exists():
+                        continue
+                    
+                    # Count lines in the file
+                    with open(file_full_path, "r", encoding="utf-8", errors="ignore") as f:
+                        line_count = sum(1 for _ in f)
+                    
+                    if line_count == 0:
+                        continue
+                    
+                    # Get file extension and language
+                    ext = Path(file_path).suffix.lower()
+                    language = self._map_extension_to_language(ext)
+                    
+                    # Update total lines
+                    loc_stats["total_lines"] += line_count
+                    
+                    # Update language stats
+                    loc_stats["by_language"][language] = loc_stats["by_language"].get(language, 0) + line_count
+                    
+                    # Update file type stats
+                    if ext in code_extensions or ext == "":
+                        loc_stats["code_files"] += 1
+                        loc_stats["by_file_type"][ext or "no_extension"] = loc_stats["by_file_type"].get(ext or "no_extension", 0) + line_count
+                    else:
+                        loc_stats["non_code_files"] += 1
+                        
+                except Exception:
+                    # Skip files that can't be read
+                    continue
+                    
+        except Exception as e:
+            self.console.print(f"[red]Error analyzing lines of code: {str(e)}")
+        
+        # Sort language stats by line count
+        loc_stats["by_language"] = dict(sorted(loc_stats["by_language"].items(), key=lambda x: x[1], reverse=True))
+        
+        return loc_stats
+
     def get_commit_activity(self) -> Dict:
         """Get commit activity over time."""
         activity = {
@@ -209,6 +277,7 @@ class Codebase:
         info = self.get_basic_info()
         languages = self.get_language_stats()
         file_stats = self.get_file_stats()
+        loc_stats = self.get_lines_of_code_stats()
 
         # Basic info table
         info_table = Table(title="Repository Information")
@@ -220,8 +289,8 @@ class Codebase:
 
         self.console.print(info_table)
 
-        # Language stats table
-        lang_table = Table(title="Language Distribution")
+        # Language stats table (by file count)
+        lang_table = Table(title="Language Distribution (by file count)")
         lang_table.add_column("Language", style="green")
         lang_table.add_column("Files", justify="right")
         lang_table.add_column("Percentage", justify="right")
@@ -232,6 +301,29 @@ class Codebase:
             lang_table.add_row(lang, str(count), f"{percentage:.1f}%")
 
         self.console.print(lang_table)
+
+        # Lines of Code stats table
+        loc_table = Table(title="Lines of Code Statistics")
+        loc_table.add_column("Metric", style="cyan")
+        loc_table.add_column("Value", justify="right")
+        
+        loc_table.add_row("Total Lines of Code", f"{loc_stats['total_lines']:,}")
+        loc_table.add_row("Code Files", f"{loc_stats['code_files']:,}")
+        loc_table.add_row("Non-Code Files", f"{loc_stats['non_code_files']:,}")
+        
+        self.console.print(loc_table)
+
+        # Lines of Code by Language table
+        loc_lang_table = Table(title="Lines of Code by Language")
+        loc_lang_table.add_column("Language", style="green")
+        loc_lang_table.add_column("Lines of Code", justify="right")
+        loc_lang_table.add_column("Percentage", justify="right")
+
+        for lang, line_count in loc_stats["by_language"].items():
+            percentage = (line_count / loc_stats["total_lines"]) * 100 if loc_stats["total_lines"] > 0 else 0
+            loc_lang_table.add_row(lang, f"{line_count:,}", f"{percentage:.1f}%")
+
+        self.console.print(loc_lang_table)
 
         # File stats table
         file_table = Table(title="File Statistics")
