@@ -11,7 +11,7 @@ from rich.table import Table
 class Codebase:
     """Class representing a codebase/repository for analysis."""
 
-    def __init__(self, path: str):
+    def __init__(self, pclearath: str):
         """Initialize the codebase analyzer.
 
         Args:
