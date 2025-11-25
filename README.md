@@ -55,7 +55,7 @@ GitPulse can be used as:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/GitPulse.git
+git clone https://github.com/xeroxzen/GitPulse.git
 cd GitPulse
 
 # Install dependencies
@@ -76,7 +76,7 @@ GitPulse provides a simple command-line interface for analyzing repositories:
 ./test_contributions.py --local /path/to/local/repo
 
 # Analyze a remote GitHub repository
-./test_contributions.py --remote https://github.com/username/repo
+./test_contributions.py --remote https://github.com/xeroxzen/GitPulse.git
 
 # Analyze the current directory (must be a Git repository)
 ./test_contributions.py
@@ -95,7 +95,7 @@ local_repo.display_contribution_stats()
 local_repo.display_language_stats()
 
 # Analyze a remote GitHub repository
-github_repo = Repository("https://github.com/username/repo", is_remote=True)
+github_repo = Repository("https://github.com/xeroxzen/GitPulse.git", is_remote=True)
 github_repo.display_contribution_stats()
 github_repo.display_language_stats()
 
@@ -119,6 +119,22 @@ For analyzing remote GitHub repositories, you need to authenticate with the GitH
 2. Set the token in your environment:
    - Create a `.env` file in the project root with: `GITHUB_TOKEN=your_token_here`
    - Or set it as an environment variable: `export GITHUB_TOKEN=your_token_here`
+
+## **🚀 Deployment**
+
+### **Docker**
+
+You can build and run GitPulse using Docker:
+
+```bash
+# Build the image
+docker build -t gitpulse .
+
+# Run the container
+docker run -p 8000:8000 gitpulse
+```
+
+The API will be available at `http://localhost:8000`.
 
 ## **🔧 Example Output**
 
